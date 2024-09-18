@@ -1,4 +1,5 @@
-﻿using UglyToad.PdfPig;
+﻿using System.Globalization;
+using UglyToad.PdfPig;
 
 const string TicketsFolder = @"/home/vladimir/RiderProjects/TicketsAggregator/src/Tickets";
 
@@ -18,6 +19,14 @@ Console.ReadKey();
 
 public class TicketsAggregator
 {
+
+    private readonly Dictionary<string, string> _domainCultureInfo = new()
+    {
+        [".com"] = "en-US",
+        [".fr"] = "fr-FR",
+        [".jp"] = "ja-JP"
+    };
+
     private readonly string _ticketsFolder;
 
     public TicketsAggregator(string ticketsFolder)
@@ -37,12 +46,24 @@ public class TicketsAggregator
             var splitString = text.Split(new[] { "Title:", "PMTitle:", "Date:", "Time:", "Visit us:" },
                 StringSplitOptions.None);
 
+            var domain = ExtractDomain(splitString.Last());
+            var tickerCulture = _domainCultureInfo[domain];
+
             for (var i = 1; i < splitString.Length - 3; i += 3)
             {
                 var title = splitString[i];
-                var date = splitString[i + 1];
-                var time = splitString[i + 2];
+                var dateAsString = splitString[i + 1];
+                var timeAsString = splitString[i + 2];
+
+                var date = DateOnly.Parse(dateAsString, new CultureInfo(tickerCulture));
+                var time = TimeOnly.Parse(timeAsString, new CultureInfo(tickerCulture));
             }
         }
+    }
+
+    private static string ExtractDomain(string webAddress)
+    {
+        var lastDotIndex = webAddress.LastIndexOf('.');
+        return webAddress.Substring(lastDotIndex);
     }
 }
